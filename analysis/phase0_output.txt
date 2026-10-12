@@ -1,0 +1,85 @@
+bars=4625  from 2024-09-01 00:00:00+00:00 to 2026-10-11 20:00:00+00:00
+
+== 1. Return distribution (4H log returns)
+mean=0.77bp sd=94.4bp ann.vol=44.2% skew=0.10 exkurt=6.3
+|z|>3: 1.82% (normal 0.27%);  |z|>4: 0.78%
+quantiles(bp): {0.01: np.float64(-271.6), 0.05: np.float64(-146.1), 0.5: np.float64(1.2), 0.95: np.float64(145.1), 0.99: np.float64(259.8)}
+daily: sd=2.25% skew=-0.07 exkurt=2.6
+weekly: sd=5.69% skew=0.14 exkurt=1.2
+
+== 2. Volatility clustering: ACF of |r| and r^2
+lag   1     2     6     12    42    180
+|r|  0.172 0.128 0.171 0.106 0.171 0.036
+r^2  0.090 0.080 0.144 0.104 0.087 0.040
+rolling 30d vol: min=24% median=41% max=70%
+
+== 3. Time-of-day (bar open UTC) and day-of-week
+    mean_bp   sd_bp     t  vol_rel
+h                                 
+0      1.22   88.59  0.38     0.75
+4     -1.03   71.48 -0.40     0.55
+8      3.47   75.26  1.28     0.54
+12    -0.15  126.86 -0.03     1.57
+16    -1.78  107.91 -0.46     1.57
+20     2.91   84.45  0.96     1.02
+     mean_bp   sd_bp     t  vol_rel
+dow                                
+0       4.80  110.70  1.11     1.23
+1      -1.96   99.46 -0.51     1.20
+2       6.55  106.00  1.59     1.20
+3      -6.93   99.40 -1.79     1.20
+4       2.09  101.43  0.53     1.28
+5      -0.56   52.86 -0.27     0.40
+6       1.43   77.42  0.48     0.49
+
+== 4. Drawdown profile (buy & hold close)
+total ret=43.0% maxDD=-53.6%  time in DD>10%: 62%, >20%: 49%
+underwater spells: n=47 longest=370d median=1.2d
+
+== 5. Serial dependence
+ACF r lag1..6: -0.010 -0.007 +0.001 +0.006 -0.031 -0.033  (2SE=0.029)
+ACF of non-overlapping 1d returns lag1=-0.013 lag2=-0.004 (n=770, 2SE=0.07)
+ACF of non-overlapping 1w returns lag1=+0.082 lag2=+0.081 (n=110, 2SE=0.19)
+ACF of non-overlapping 30d returns lag1=-0.001 lag2=-0.091 (n=25, 2SE=0.40)
+Variance ratio (Lo-MacKinlay, homosk. z):
+  q=   2 (  0.3d) VR=0.991 z=-0.64
+  q=   6 (  1.0d) VR=0.971 z=-0.81
+  q=  12 (  2.0d) VR=0.944 z=-1.02
+  q=  42 (  7.0d) VR=0.948 z=-0.48
+  q=  84 ( 14.0d) VR=1.010 z=+0.07
+  q= 180 ( 30.0d) VR=1.177 z=+0.78
+  q= 360 ( 60.0d) VR=1.356 z=+1.11
+Hurst (R/S, 2d..128d blocks) = 0.560
+
+== 6. Time-series momentum: corr(past L-bar ret, next H-bar ret), non-overlapping on H
+  L=  1.0d H= 1.0d corr=-0.013 hit=0.50 fut|up=+0.13% fut|down=-0.04% n=769
+  L=  7.0d H= 1.0d corr=+0.027 hit=0.50 fut|up=+0.10% fut|down=+0.00% n=763
+  L=  7.0d H= 7.0d corr=+0.082 hit=0.47 fut|up=+0.69% fut|down=+0.05% n=109
+  L= 20.0d H= 7.0d corr=+0.089 hit=0.50 fut|up=+0.47% fut|down=+0.04% n=107
+  L= 30.0d H= 7.0d corr=+0.123 hit=0.50 fut|up=+0.59% fut|down=-0.21% n=105
+  L= 60.0d H= 7.0d corr=+0.067 hit=0.46 fut|up=+0.31% fut|down=-0.07% n=101
+  L= 30.0d H=30.0d corr=-0.001 hit=0.42 fut|up=+0.69% fut|down=+1.63% n=24
+Price vs SMA(N): forward 7d log-return (mean %) when above vs below
+  N=   60 (  10d): above=+0.48% below=+0.22% time_above=52% crosses=290 (~2.7d apart)
+  N=  120 (  20d): above=+0.60% below=+0.08% time_above=52% crosses=188 (~4.1d apart)
+  N=  300 (  50d): above=+0.87% below=-0.28% time_above=55% crosses=105 (~7.3d apart)
+  N=  600 ( 100d): above=+0.62% below=+0.08% time_above=52% crosses=65 (~11.9d apart)
+  N= 1200 ( 200d): above=+0.54% below=+0.15% time_above=52% crosses=39 (~19.8d apart)
+
+== 7. Behaviour after large 4H moves (|r| > 2.5x rolling 30d sd)
+  up: n=66  H=0.2d mean=+0.12% t=+0.8 | H=1.0d mean=-0.12% t=-0.3 | H=7.0d mean=+0.75% t=+1.0
+  down: n=83  H=0.2d mean=+0.03% t=+0.2 | H=1.0d mean=+0.31% t=+0.9 | H=7.0d mean=-0.91% t=-1.1
+Next-bar |r| after big move vs unconditional (vol persistence): 90bp vs 63bp
+  1d move >2sd up: bars=153 next1d=+0.06% next7d=+1.20%
+  1d move >2sd down: bars=147 next1d=+0.48% next7d=-2.26%
+
+== 8. Volume
+corr(log vol, |r|) = 0.53;  ACF log vol lag1=0.68 lag6=0.52
+  rel.vol [0,0.7): 31% bars, next1d=+0.04% next7d=+0.45%
+  rel.vol [0.7,1.5): 33% bars, next1d=-0.02% next7d=-0.02%
+  rel.vol [1.5,3): 20% bars, next1d=+0.04% next7d=+0.22%
+  rel.vol [3,99): 11% bars, next1d=+0.20% next7d=+0.85%
+  up&hiVol: n=732 next7d=+0.58%
+  up&loVol: n=732 next7d=+0.50%
+  dn&hiVol: n=725 next7d=+0.30%
+  dn&loVol: n=715 next7d=+0.40%
