@@ -23,7 +23,8 @@ BENCHMARKS = {"B&H": bench_bh, "SMA200": bench_sma200, "SMA50/200": bench_sma50_
 
 
 # ---------------------------------------------------------------- candidate strategy
-PARAMS = {"sma_n": 300, "atr_n": 84, "k": 1.0}  # 50d SMA, 14d ATR, band = 1 ATR
+PARAMS = {"sma_n": 300, "atr_n": 84, "k": 1.0,   # 50d SMA, 14d ATR, band = 1 ATR
+          "allow_short": False}                    # configurable; default long/flat (see EXP-009)
 
 
 def atr(df, n):
@@ -32,12 +33,15 @@ def atr(df, n):
     return tr.rolling(n).mean()
 
 
-def trend_band(df, sma_n=PARAMS["sma_n"], atr_n=PARAMS["atr_n"], k=PARAMS["k"]):
-    """Long/flat trend filter with volatility-scaled hysteresis.
-    Enter long when close > SMA + k*ATR; exit to flat when close < SMA - k*ATR; otherwise hold."""
+def trend_band(df, sma_n=PARAMS["sma_n"], atr_n=PARAMS["atr_n"], k=PARAMS["k"],
+               allow_short=PARAMS["allow_short"]):
+    """Trend filter with volatility-scaled hysteresis.
+    close > SMA + k*ATR  -> long (+1)
+    close < SMA - k*ATR  -> flat (0), or short (-1) if allow_short
+    otherwise            -> keep previous state."""
     m = df.close.rolling(sma_n).mean()
     a = atr(df, atr_n)
     sig = pd.Series(np.nan, index=df.index)
-    sig[df.close < m - k * a] = 0.0
+    sig[df.close < m - k * a] = -1.0 if allow_short else 0.0
     sig[df.close > m + k * a] = 1.0
     return sig.ffill().fillna(0.0)

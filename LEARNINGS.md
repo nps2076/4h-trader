@@ -10,7 +10,7 @@
 - Time-of-day/day-of-week: volume and vol peak 12–20 UTC and drop on weekends; mean returns show no significant pattern (|t| < 1.8). Don't use calendar effects.
 - Volume: correlates with |r| (0.53), but carries little directional information. Low priority.
 - Drawdowns: B&H max DD −54% within TRAIN; under water 62% of the time by >10%. Avoiding the deep leg matters more than catching the top.
-- Data: TradingView 4H history starts 2024-01-01 (VALIDATION/HOLDOUT need another source). One missing Coinbase bar (2025-10-25 16:00, all pairs).
+- Data: TradingView 4H history starts 2024-01-01, and pre-2024 sources are unreachable. TRAIN is all the usable data, so out-of-sample = unseen coins only; Y1/Y2 splits are in-sample stability checks. One missing Coinbase bar (2025-10-25 16:00, all pairs).
 
 ## First hypotheses
 - H1: Slow trend signal (≈20–60d lookback) with hysteresis beats SMA200 after costs.
@@ -25,10 +25,11 @@
 ## What doesn't
 - Raw sign-of-return / MA-cross signals at 4H: flip near zero, so 40–100 trades/yr × 30 bp/side wipes out the edge (EXP-001/003).
 - Donchian breakout alone: parameter-fragile on 2 years of data (EXP-002).
+- Shorting (symmetric, midline cover, or 200d-regime gated): helps only in the bear half-year, loses more in bull/sideways squeezes, doubles costs (EXP-009/010). Kept as an off-by-default flag.
 - Vol-scaling vs the asset's own median vol: small, asset-inconsistent gain, not worth 2–3 extra params (EXP-004/006).
 
 ## Current accepted strategy
-`trend_band`: long/flat on 4H. Enter long at the next open when close > SMA(300) + 1·ATR(84); exit to flat when close < SMA(300) − 1·ATR(84); otherwise keep the current state. Full size, no leverage. BTC TRAIN Sh 0.81/Cal 0.67/DD −32% (B&H 0.59/0.33/−54%); ETH TRAIN 1.07/1.22/−35% (B&H 0.33/0.00/−68%). ~15 trades/yr, so per-window statistics are weak (<20 trades).
+`trend_band`: long/flat on 4H. Enter long at the next open when close > SMA(300) + 1·ATR(84); exit to flat when close < SMA(300) − 1·ATR(84); otherwise keep the current state. Full size, no leverage; `allow_short` flag (default off). Frozen as v1-frozen. BTC TRAIN Sh 0.81/Cal 0.67/DD −32% (B&H 0.59/0.33/−54%); ETH TRAIN 1.07/1.22/−35% (B&H 0.33/0.00/−68%). ~15 trades/yr, so per-window statistics are weak (<20 trades).
 
 ## Open ideas
 Multi-timeframe (daily/weekly from completed bars) trend filter; ATR trailing stop; vol-regime filter.

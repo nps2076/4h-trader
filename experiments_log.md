@@ -1,6 +1,6 @@
 # Experiments log
 
-**Trial counter:** 8 experiments, 79 parameter combinations evaluated.
+**Trial counter:** 10 experiments, 91 parameter combinations evaluated.
 
 Commit for each entry = the commit whose message carries its EXP ID (`git log --grep EXP-0NN`); log and code go in together.
 
@@ -10,6 +10,8 @@ Commit for each entry = the commit whose message carries its EXP ID (`git log --
 | Raw TSMOM sign(L-bar ret) | no plateau, 40–100 trades/yr eaten by costs | EXP-001 |
 | Donchian N/N÷2 standalone | only N=120 works, neighbours ~0 Sharpe | EXP-002 |
 | Vol-scaling overlay (own-median σ target) | BTC-only gain, ETH neutral, +2–3 params | EXP-004/006 |
+| Shorts below lower band (symmetric / midline cover) | squeezed in bull/sideways, 2× trades; BTC Sh .81→.42 | EXP-009 |
+| Shorts gated by 200d bear regime | gate is late; BTC Sh .81→.31 | EXP-010 |
 | Multi-horizon sign ensemble | still flips near zero, high turnover | EXP-003 |
 
 ## Data / process issues
@@ -64,3 +66,20 @@ Code moved to strategy.trend_band (PARAMS sma_n=300, atr_n=84, k=1).
 ### EXP-008 TRAIN robustness snapshot (no strategy change) — run_all.py --windows TRAIN --robust --rolling
 Plateau (Sharpe): BTC sma_n 250–600 × k 0.5–2 all ≥ 0.71 except one cell (B&H 0.59); ETH sma_n 200–500 all ≥ 0.87 (B&H 0.33). ATR 42/84/168: BTC .95/.81/.81, ETH 1.11/1.07/1.12. 2× cost: BTC .64/Cal .42 (still > B&H), ETH .98. +1 bar delay: BTC .86, ETH 1.05. BTC+ETH basket: TB Sh 1.07/Cal 1.13 vs B&H .46/.18.
 Rolling 365d BTC (5 windows, TRAIN-era data only): TB beats both benchmarks on Sharpe in only 1/5. It trails B&H in strong-uptrend years (lower exposure) and SMA200 in the bear year. Expect per-window failures in strong bull windows. Not acting on this (no new information beyond TRAIN; avoid over-fitting).
+
+---
+## Session 2 (user direction: TradingView data only; add configurable shorts; unseen assets LINK, XRP, XLM, BCH)
+- D-004: The network can't be opened, so VALIDATION/HOLDOUT A/B (pre-2024) are unavailable. With 200d warm-up, TRAIN (Sep 2024–Oct 2026) is ALL usable data. Added TRAIN_Y1 (Sep24–Aug25) / TRAIN_Y2 (Sep25–Oct26) as stability splits only (in-sample). The only true out-of-sample test left is cross-asset: coins never run with the strategy. XLM, BCH added from Coinbase (same 2025-10-25 16:00 gap).
+- D-005: Engine supports pos ∈ [−1,1]; a flip costs 2 sides; short carry 5%/yr on short notional (shorts assumed via perp/margin; Coinbase spot can't short). Long-only results unchanged (regression check).
+
+### EXP-009 Shorts: (A) symmetric, short when close < SMA−k·ATR, flip long when > SMA+k·ATR; (B) short below lower band, cover to flat when close > SMA
+Hypothesis: TRAIN contains a deep bear leg (B&H DD −54% BTC / −68% ETH), and the band already identifies downtrends, so shorting them should add return. Risk: crypto bear markets have violent short squeezes, and flipping in sideways markets doubles whipsaw costs. B exits shorts faster (midline) to limit squeeze damage. No new parameters in A; B reuses the SMA. BTC+ETH TRAIN, plus Y1/Y2 splits.
+Result (Sh/Cal/DD, 1×): BTC TRAIN long-only 0.81/0.67/−32% → A 0.42/0.23/−41% → B 0.40/0.20/−41%; ETH 1.07/1.22/−35% → A 0.96/1.04/−50% → B 0.96/1.01/−50%. Splits: shorts help only in the bear half (Y2: BTC −0.03→0.24, ETH 0.41→0.97) and hurt badly in Y1 (BTC 1.45→0.58, ETH 1.64→0.98). Trades and turnover double; at 2× cost BTC A drops to 0.19.
+Decision: REJECTED as default. Kept as config flag `allow_short` (default False). Shorts get squeezed in bull/sideways regimes, and the band alone can't tell a pullback in an uptrend from a new downtrend.
+
+### EXP-010 Regime-gated shorts (C): short only when close < SMA−k·ATR AND close < SMA(1200) (200d); else as long/flat
+Hypothesis: shorts lose in bull regimes (EXP-009 Y1), so gate them with the long-term trend. Adds one condition reusing the benchmark's 200d SMA (no fitted constant). Accept only if it beats long-only on full TRAIN for both BTC and ETH.
+Result (Sh/Cal/DD, 1×): BTC TRAIN 0.81→0.31/0.10/−45% (41 trades); ETH 1.07→0.91/1.16/−38%. It helps only in Y2 (BTC −0.03→0.35, ETH 0.41→0.57), and at 2× cost BTC drops to 0.02.
+Decision: REJECTED. The 200d regime flips late, so shorts are still opened into squeezes, and flips double costs. Conclusion across EXP-009/010: on 2024–26 data, shorting doesn't improve risk-adjusted returns at 4H after realistic costs. Long/flat stays the default.
+
+### FREEZE v1 (tag v1-frozen): trend_band, sma_n=300, atr_n=84, k=1.0, allow_short=False (flag kept, configurable)

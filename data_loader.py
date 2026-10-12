@@ -24,6 +24,8 @@ SYMBOLS = {
     "AVAX": "COINBASE_AVAXUSD",
     "LINK": "COINBASE_LINKUSD",
     "LTC": "COINBASE_LTCUSD",
+    "XLM": "COINBASE_XLMUSD",
+    "BCH": "COINBASE_BCHUSD",
 }
 # Frozen cache: last bar used by every run (open time, UTC). Bars after this are ignored.
 FREEZE_LAST_BAR = pd.Timestamp("2026-10-11 20:00", tz="UTC")
