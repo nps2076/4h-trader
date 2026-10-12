@@ -1,6 +1,6 @@
 # Experiments log
 
-**Trial counter:** 7 experiments, 40 parameter combinations evaluated.
+**Trial counter:** 8 experiments, 79 parameter combinations evaluated.
 
 Commit for each entry = the commit whose message carries its EXP ID (`git log --grep EXP-0NN`); log and code go in together.
 
@@ -59,3 +59,8 @@ Decision: REJECTED. The gain is BTC-only (ETH flat), and in practice the overlay
 ### EXP-007 Step 4: base (SMA300 ± 1·ATR84 band) on ETH TRAIN, no changes
 Result: ETH Sh 1.07, Cal 1.22, DD −35%, 14 trades, TO 13/yr vs B&H 0.33/0.00/−68%, SMA200 0.28/0.08/−43%, SMA50/200 −0.17/−0.30. At 2× cost: 0.98/1.03. PASS. Flag: <20 trades on both BTC (18) and ETH (14), so statistically weak per window.
 Code moved to strategy.trend_band (PARAMS sma_n=300, atr_n=84, k=1).
+- D-003: Added fetch_history.py (Coinbase 1H→4H resample, Binance 4H) for pre-2024 history; loader fixed so TradingView bars win on overlap. Not run yet (403).
+
+### EXP-008 TRAIN robustness snapshot (no strategy change) — run_all.py --windows TRAIN --robust --rolling
+Plateau (Sharpe): BTC sma_n 250–600 × k 0.5–2 all ≥ 0.71 except one cell (B&H 0.59); ETH sma_n 200–500 all ≥ 0.87 (B&H 0.33). ATR 42/84/168: BTC .95/.81/.81, ETH 1.11/1.07/1.12. 2× cost: BTC .64/Cal .42 (still > B&H), ETH .98. +1 bar delay: BTC .86, ETH 1.05. BTC+ETH basket: TB Sh 1.07/Cal 1.13 vs B&H .46/.18.
+Rolling 365d BTC (5 windows, TRAIN-era data only): TB beats both benchmarks on Sharpe in only 1/5. It trails B&H in strong-uptrend years (lower exposure) and SMA200 in the bear year. Expect per-window failures in strong bull windows. Not acting on this (no new information beyond TRAIN; avoid over-fitting).

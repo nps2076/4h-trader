@@ -40,9 +40,10 @@ def _raw_to_df(path: Path) -> pd.DataFrame:
 
 
 def build_cache():
-    """Merge all raw dumps per symbol (later files override overlaps), freeze, save parquet."""
+    """Merge raw dumps per symbol (TradingView overrides API bars on overlap), freeze, save parquet."""
     for asset, sym in SYMBOLS.items():
-        files = sorted(RAW.glob(f"{sym}_4h*.json"))
+        # exchange-API history first, TradingView (source of record) last so it wins on overlap
+        files = sorted(RAW.glob(f"{sym}_4h*.json"), key=lambda f: "_api" not in f.name)
         if not files:
             continue
         df = pd.concat([_raw_to_df(f) for f in files])
