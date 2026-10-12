@@ -19,7 +19,7 @@ atrLen     = input.int(84, "ATR length (bars)", minval = 2, tooltip = "84 x 4H =
 k          = input.float(1.0, "Band width k (ATRs)", minval = 0.0, step = 0.25)
 allowShort = input.bool(false, "Allow shorts", tooltip = "Off = long/flat (research default). On = short below the lower band.")
 useFrom    = input.bool(false, "Limit backtest start", group = "Backtest window")
-fromTime   = input.time(timestamp("2024-09-01T00:00:00Z"), "Start", group = "Backtest window")
+fromTime   = input.time(timestamp("UTC", 2024, 9, 1, 0, 0), "Start", group = "Backtest window")
 
 // ---------------------------------------------------------------- indicators
 basis = ta.sma(close, smaLen)
