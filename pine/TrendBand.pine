@@ -54,6 +54,11 @@ pL = plot(lower, "Lower band", color = color.new(color.red, 0))
 fill(pU, pL, color = color.new(color.gray, 88), title = "No-trade band")
 bgcolor(state == 1 ? color.new(color.teal, 92) : state == -1 ? color.new(color.red, 92) : na, title = "State")
 
-alertcondition(state == 1 and state[1] != 1, "TrendBand: go long", "TrendBand LONG on {{ticker}} at {{close}}")
-alertcondition(state != 1 and state[1] == 1, "TrendBand: exit long", "TrendBand EXIT LONG on {{ticker}} at {{close}}")
-alertcondition(state == -1 and state[1] != -1, "TrendBand: go short", "TrendBand SHORT on {{ticker}} at {{close}}")
+// Alerts: alertcondition() is ignored in strategies, so use alert(). In TradingView create an alert on this
+// strategy with condition "alert() function calls only" (or "Order fills and alert() function calls").
+if state == 1 and state[1] != 1
+    alert("TrendBand LONG " + syminfo.tickerid + " @ " + str.tostring(close), alert.freq_once_per_bar_close)
+if state != 1 and state[1] == 1
+    alert("TrendBand EXIT LONG " + syminfo.tickerid + " @ " + str.tostring(close), alert.freq_once_per_bar_close)
+if state == -1 and state[1] != -1
+    alert("TrendBand SHORT " + syminfo.tickerid + " @ " + str.tostring(close), alert.freq_once_per_bar_close)
