@@ -15,10 +15,11 @@ from strategy import BENCHMARKS, trend_band, PARAMS
 
 ROOT = Path(__file__).parent
 RES, CH = ROOT / "results", ROOT / "charts"
-STRATS = dict(BENCHMARKS, **{"TrendBand": trend_band})
+STRATS = dict(BENCHMARKS, **{"TrendBand": trend_band,
+                             "TrendBand_LS": lambda d: trend_band(d, allow_short=True)})  # info only
 SHOW = ["CAGR", "Vol", "Sharpe", "Sortino", "Calmar", "MaxDD", "DD_days", "WinRate", "PF", "Trades",
         "AvgHold_d", "Exposure", "Turnover", "CostDrag"]
-COLORS = {"B&H": "#9aa0a6", "SMA200": "#e8a33d", "SMA50/200": "#7b61c4", "TrendBand": "#1f6feb"}
+COLORS = {"B&H": "#9aa0a6", "SMA200": "#e8a33d", "SMA50/200": "#7b61c4", "TrendBand": "#1f6feb", "TrendBand_LS": "#d1495b"}
 
 
 def sim(asset, window, fn, cost_mult=1.0, delay=0):
@@ -45,10 +46,10 @@ def fmt_table(t):
 def chart(asset, window, results, tag):
     fig, (a1, a2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True, gridspec_kw={"height_ratios": [2, 1]})
     for name, res in results.items():
-        lw = 2.0 if name == "TrendBand" else 1.2
+        lw = 2.0 if name == "TrendBand" else 1.0
         a1.plot(res.index, res.equity, label=name, color=COLORS[name], lw=lw)
         a2.plot(res.index, res.equity / res.equity.cummax() - 1, color=COLORS[name], lw=lw)
-    a1.set_yscale("log"); a1.set_ylabel("Equity (log)"); a1.legend(frameon=False, ncol=4)
+    a1.set_yscale("log"); a1.set_ylabel("Equity (log)"); a1.legend(frameon=False, ncol=5, fontsize=8, loc="upper left")
     a2.set_ylabel("Drawdown"); a2.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
     for a in (a1, a2):
         a.grid(alpha=0.3); a.spines[["top", "right"]].set_visible(False)
@@ -74,11 +75,11 @@ def main_table(assets, windows, tag, charts=True):
     for (w, name), rs in basket.items():
         if len(rs) < 2:
             continue
-        r = pd.concat(rs, axis=1).dropna().mean(axis=1)
+        r = pd.concat(rs, axis=1, sort=True).dropna().mean(axis=1)
         fake = pd.DataFrame({"ret": r, "pos": 1.0, "turn": 0.0, "cost": 0.0})
         fake["equity"] = (1 + r).cumprod()
         m = metrics(fake)
-        for k in ["Trades", "WinRate", "PF", "AvgHold_d", "Exposure", "AvgPos", "Turnover", "CostDrag"]:
+        for k in ["Trades", "WinRate", "PF", "AvgHold_d", "Exposure", "AvgPos", "ShortPct", "Turnover", "CostDrag"]:
             m[k] = np.nan
         m["Trades"] = 0
         rows.append(dict(window=w, asset=f"BASKET({len(rs)})", strat=name, **m))
@@ -161,7 +162,7 @@ def rolling_btc(tag):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--windows", nargs="+", default=list(WINDOWS))
+    ap.add_argument("--windows", nargs="+", default=["TRAIN", "TRAIN_Y1", "TRAIN_Y2"])
     ap.add_argument("--assets", nargs="+", default=list(SYMBOLS))
     ap.add_argument("--tag", default="all")
     ap.add_argument("--robust", action="store_true")
@@ -180,7 +181,7 @@ if __name__ == "__main__":
     if len(v):
         md += ["## Verdict (TrendBand vs B&H and SMA200: Sharpe & Calmar; DD ≤ B&H+5pp)", v.to_markdown(index=False), ""]
     if a.robust:
-        md += ["## Robustness", robustness(["BTC", "ETH"], [w for w in a.windows if w in ("TRAIN", "VALIDATION")], a.tag)]
+        md += ["## Robustness", robustness(["BTC", "ETH"], [w for w in a.windows if w == "TRAIN"], a.tag)]
     if a.rolling:
         r = rolling_btc(a.tag)
         md += ["## Rolling 365d windows, BTC (step 90d)", fmt_table(r),

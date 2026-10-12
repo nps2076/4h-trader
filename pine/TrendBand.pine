@@ -1,0 +1,59 @@
+//@version=6
+// TrendBand v1: 4H trend filter with an ATR hysteresis band (see STRATEGY.md)
+//   close > SMA + k*ATR  -> long
+//   close < SMA - k*ATR  -> flat (or short if "Allow shorts" is on)
+//   otherwise            -> keep previous state
+// Signals are evaluated on bar close and filled at the next bar's open (TradingView default:
+// process_orders_on_close = false), matching the Python backtest.
+// Defaults reproduce the frozen research version: SMA 300, ATR 84 (simple average of True Range), k = 1.
+// Intended for 4H charts (6 bars/day). Commission 0.30%/side ~ Coinbase taker 0.25% + 5 bp slippage;
+// set 0.15% for Binance in the Properties tab.
+strategy("TrendBand 4H (SMA ± k·ATR hysteresis)", shorttitle = "TrendBand", overlay = true,
+     initial_capital = 10000, default_qty_type = strategy.percent_of_equity, default_qty_value = 100,
+     commission_type = strategy.commission.percent, commission_value = 0.30,
+     pyramiding = 0, process_orders_on_close = false, calc_on_every_tick = false, margin_long = 100, margin_short = 100)
+
+// ---------------------------------------------------------------- inputs
+smaLen     = input.int(300, "SMA length (bars)", minval = 2, tooltip = "300 x 4H = 50 days")
+atrLen     = input.int(84, "ATR length (bars)", minval = 2, tooltip = "84 x 4H = 14 days; simple average of True Range")
+k          = input.float(1.0, "Band width k (ATRs)", minval = 0.0, step = 0.25)
+allowShort = input.bool(false, "Allow shorts", tooltip = "Off = long/flat (research default). On = short below the lower band.")
+useFrom    = input.bool(false, "Limit backtest start", group = "Backtest window")
+fromTime   = input.time(timestamp("2024-09-01T00:00:00Z"), "Start", group = "Backtest window")
+
+// ---------------------------------------------------------------- indicators
+basis = ta.sma(close, smaLen)
+atrS  = ta.sma(ta.tr(true), atrLen)          // simple ATR (Python: TR.rolling(84).mean())
+upper = basis + k * atrS
+lower = basis - k * atrS
+
+// ---------------------------------------------------------------- state machine
+var int state = 0                              // +1 long, 0 flat, -1 short
+if not na(upper)
+    if close > upper
+        state := 1
+    else if close < lower
+        state := allowShort ? -1 : 0
+    // else: inside the band -> keep previous state
+
+inWindow = not useFrom or time >= fromTime
+
+// ---------------------------------------------------------------- orders (filled at next bar open)
+if inWindow
+    if state == 1 and strategy.position_size <= 0
+        strategy.entry("Long", strategy.long)              // also closes a short if one is open
+    else if state == -1 and strategy.position_size >= 0
+        strategy.entry("Short", strategy.short)            // also closes a long if one is open
+    else if state == 0 and strategy.position_size != 0
+        strategy.close_all(comment = "Flat")
+
+// ---------------------------------------------------------------- plots
+plot(basis, "SMA", color = color.new(color.gray, 0), linewidth = 2)
+pU = plot(upper, "Upper band", color = color.new(color.teal, 0))
+pL = plot(lower, "Lower band", color = color.new(color.red, 0))
+fill(pU, pL, color = color.new(color.gray, 88), title = "No-trade band")
+bgcolor(state == 1 ? color.new(color.teal, 92) : state == -1 ? color.new(color.red, 92) : na, title = "State")
+
+alertcondition(state == 1 and state[1] != 1, "TrendBand: go long", "TrendBand LONG on {{ticker}} at {{close}}")
+alertcondition(state != 1 and state[1] == 1, "TrendBand: exit long", "TrendBand EXIT LONG on {{ticker}} at {{close}}")
+alertcondition(state == -1 and state[1] != -1, "TrendBand: go short", "TrendBand SHORT on {{ticker}} at {{close}}")

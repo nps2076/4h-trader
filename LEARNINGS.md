@@ -31,5 +31,9 @@
 ## Current accepted strategy
 `trend_band`: long/flat on 4H. Enter long at the next open when close > SMA(300) + 1·ATR(84); exit to flat when close < SMA(300) − 1·ATR(84); otherwise keep the current state. Full size, no leverage; `allow_short` flag (default off). Frozen as v1-frozen. BTC TRAIN Sh 0.81/Cal 0.67/DD −32% (B&H 0.59/0.33/−54%); ETH TRAIN 1.07/1.22/−35% (B&H 0.33/0.00/−68%). ~15 trades/yr, so per-window statistics are weak (<20 trades).
 
+## Out-of-sample (unseen coins, EXP-011)
+- 4/10 unseen coins beat both benchmarks; DD < B&H on 9/10; basket Sh .65 vs .53. The edge is mostly drawdown control.
+- Fails on choppy mean-reverting coins (LTC, ADA, BCH) and lags in steady bull runs (XRP, XLM). The in-sample BTC/ETH numbers overstate the edge.
+
 ## Open ideas
-Multi-timeframe (daily/weekly from completed bars) trend filter; ATR trailing stop; vol-regime filter.
+Validate on pre-2024 data when available (biggest gap). A chop filter (e.g. efficiency ratio) to stand aside in trendless coins. Faster re-entry after shakeouts in bull regimes.

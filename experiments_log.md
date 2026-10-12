@@ -1,6 +1,6 @@
 # Experiments log
 
-**Trial counter:** 10 experiments, 91 parameter combinations evaluated.
+**Trial counter:** 11 experiments, 91 parameter combinations evaluated.
 
 Commit for each entry = the commit whose message carries its EXP ID (`git log --grep EXP-0NN`); log and code go in together.
 
@@ -82,4 +82,12 @@ Hypothesis: shorts lose in bull regimes (EXP-009 Y1), so gate them with the long
 Result (Sh/Cal/DD, 1×): BTC TRAIN 0.81→0.31/0.10/−45% (41 trades); ETH 1.07→0.91/1.16/−38%. It helps only in Y2 (BTC −0.03→0.35, ETH 0.41→0.57), and at 2× cost BTC drops to 0.02.
 Decision: REJECTED. The 200d regime flips late, so shorts are still opened into squeezes, and flips double costs. Conclusion across EXP-009/010: on 2024–26 data, shorting doesn't improve risk-adjusted returns at 4H after realistic costs. Long/flat stays the default.
 
-### FREEZE v1 (tag v1-frozen): trend_band, sma_n=300, atr_n=84, k=1.0, allow_short=False (flag kept, configurable)
+### FREEZE v1 (commit b044057; git tag v1-frozen is local only, since the proxy refuses tag pushes with 403): trend_band, sma_n=300, atr_n=84, k=1.0, allow_short=False (flag kept, configurable)
+
+### EXP-011 UNSEEN-ASSET RUN (single run, frozen v1, no retuning) — run_all.py --tag final
+Coins never run with the strategy before: SOL, BNB(Binance USDT), XRP, DOGE, ADA, AVAX, LINK, LTC, XLM, BCH. Windows: TRAIN (full) + Y1/Y2 splits. Results exactly as obtained (Sharpe TB vs B&H / SMA200; MaxDD TB vs B&H):
+SOL .49 vs .25/.41 (DD −52 vs −78) PASS | BNB .71 vs .58/−.02 PASS | DOGE .92 vs .35/.29 PASS | AVAX .11 vs .03/.07 PASS (both Calmars negative) |
+XRP .86 vs .93/1.03 FAIL | ADA −.01 vs .30/−.27 FAIL | LINK .49 vs .53/.55 FAIL | LTC −.40 vs .38/.07 FAIL (DD −83 vs −72) | XLM .64 vs .86/.56 FAIL | BCH .26 vs .31/−.64 FAIL.
+Unseen: 4/10 pass full TRAIN; DD better than B&H on 9/10. 12-coin EW basket TRAIN: TB Sh .65/Cal .39/DD −49% vs B&H .53/.21/−68%, SMA200 .34/.11/−53% → PASS. Basket Y1 FAIL (B&H 1.52 vs TB 1.26, bull year); Y2 PASS (−.25 vs −.60).
+Long/short flag (info only): worse than long-only over full TRAIN on 11/12 coins; better in Y2 (bear) on 11/12. Basket Sh .24 vs .65.
+Reading: the edge is drawdown control, not alpha. In trendless, choppy alts (LTC, ADA, BCH) the band whipsaws; in steady-bull alts (XRP, XLM in Y1) lower exposure lags B&H. Half of the full-TRAIN coin windows and all Y1/Y2 windows have <20 trades → statistically weak.
