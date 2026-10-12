@@ -19,13 +19,16 @@
 - H4: Short-term mean reversion won't survive ~30 bp/side Coinbase costs.
 
 ## What works
-(tbd)
+- Hysteresis is the single biggest lever: a ±k·ATR band around a 50–100d SMA turns a whipsawing MA rule into a robust one (plateau over N 300–600 bars, k 0.5–2). It cuts trades ~3× and keeps the trend signal.
+- Expressing the band in ATR units makes it portable: the same rule works on ETH with no change.
 
 ## What doesn't
-(tbd)
+- Raw sign-of-return / MA-cross signals at 4H: flip near zero, so 40–100 trades/yr × 30 bp/side wipes out the edge (EXP-001/003).
+- Donchian breakout alone: parameter-fragile on 2 years of data (EXP-002).
+- Vol-scaling vs the asset's own median vol: small, asset-inconsistent gain, not worth 2–3 extra params (EXP-004/006).
 
 ## Current accepted strategy
-(none yet)
+`trend_band`: long/flat on 4H. Enter long at the next open when close > SMA(300) + 1·ATR(84); exit to flat when close < SMA(300) − 1·ATR(84); otherwise keep the current state. Full size, no leverage. BTC TRAIN Sh 0.81/Cal 0.67/DD −32% (B&H 0.59/0.33/−54%); ETH TRAIN 1.07/1.22/−35% (B&H 0.33/0.00/−68%). ~15 trades/yr, so per-window statistics are weak (<20 trades).
 
 ## Open ideas
 Multi-timeframe (daily/weekly from completed bars) trend filter; ATR trailing stop; vol-regime filter.

@@ -1,12 +1,15 @@
 # Experiments log
 
-**Trial counter:** 5 experiments, 36 parameter combinations evaluated.
+**Trial counter:** 7 experiments, 40 parameter combinations evaluated.
+
+Commit for each entry = the commit whose message carries its EXP ID (`git log --grep EXP-0NN`); log and code go in together.
 
 ## Ideas rejected
 | Idea | Reason | EXP |
 |---|---|---|
 | Raw TSMOM sign(L-bar ret) | no plateau, 40–100 trades/yr eaten by costs | EXP-001 |
 | Donchian N/N÷2 standalone | only N=120 works, neighbours ~0 Sharpe | EXP-002 |
+| Vol-scaling overlay (own-median σ target) | BTC-only gain, ETH neutral, +2–3 params | EXP-004/006 |
 | Multi-horizon sign ensemble | still flips near zero, high turnover | EXP-003 |
 
 ## Data / process issues
@@ -47,3 +50,12 @@ Result EXP-005 (BTC TRAIN), Sharpe grid (rows N, cols k=0/0.5/1/1.5/2):
 N180 .30 .47 .33 .41 .40 | N300 .56 .74 .81 .74 .91 | N600 .64 .82 1.00 1.05 1.05 | N1200 .52 .55 .67 .68 .53
 Calmar N300: .33 .54 .67 .53 .78; N600: .42 .78 1.10 1.20 1.12. Trades fall from 53 (N300,k0) to 6 (N600,k2).
 Decision: ACCEPTED as base. Chosen N=300 (50d), k=1: Sh 0.81, Cal 0.67, DD −32%, 18 trades, TO 16.6/yr (2× cost: 0.64/0.42). Reason: a broad plateau (N 300–600 × k ≥ 0.5 all beat both benchmarks), and the band is in vol units, so it's portable. I picked a round cell inside the plateau, not the best one (N600 has <10 trades). It adds 1 parameter (k) over a plain SMA.
+
+### EXP-006 Vol-scaling overlay on the accepted SMA-band base (σ_ref = own 365d median of σ_30d, cap 1, band 0.2)
+Hypothesis: within long periods, cutting size when vol runs above its norm (stress, crashes) should lift Sharpe and cut DD further. Risk: extra rebalancing trades eat the gain at 30 bp/side.
+Result (Sh/Cal/DD/trades, 1× cost): BTC base 0.81/0.67/−32%/18 → VS 0.87/0.79/−30%/18; ETH base 1.07/1.22/−35%/14 → VS 1.05/1.24/−33%/14.
+Decision: REJECTED. The gain is BTC-only (ETH flat), and in practice the overlay only resizes entries (band 0.2 vs 0.35 identical: no mid-trade rebalances fire). It adds 2–3 parameters for ~0.03 Sharpe on average.
+
+### EXP-007 Step 4: base (SMA300 ± 1·ATR84 band) on ETH TRAIN, no changes
+Result: ETH Sh 1.07, Cal 1.22, DD −35%, 14 trades, TO 13/yr vs B&H 0.33/0.00/−68%, SMA200 0.28/0.08/−43%, SMA50/200 −0.17/−0.30. At 2× cost: 0.98/1.03. PASS. Flag: <20 trades on both BTC (18) and ETH (14), so statistically weak per window.
+Code moved to strategy.trend_band (PARAMS sma_n=300, atr_n=84, k=1).

@@ -20,3 +20,24 @@ def bench_sma50_200(df):
 
 
 BENCHMARKS = {"B&H": bench_bh, "SMA200": bench_sma200, "SMA50/200": bench_sma50_200}
+
+
+# ---------------------------------------------------------------- candidate strategy
+PARAMS = {"sma_n": 300, "atr_n": 84, "k": 1.0}  # 50d SMA, 14d ATR, band = 1 ATR
+
+
+def atr(df, n):
+    pc = df.close.shift()
+    tr = pd.concat([df.high - df.low, (df.high - pc).abs(), (df.low - pc).abs()], axis=1).max(axis=1)
+    return tr.rolling(n).mean()
+
+
+def trend_band(df, sma_n=PARAMS["sma_n"], atr_n=PARAMS["atr_n"], k=PARAMS["k"]):
+    """Long/flat trend filter with volatility-scaled hysteresis.
+    Enter long when close > SMA + k*ATR; exit to flat when close < SMA - k*ATR; otherwise hold."""
+    m = df.close.rolling(sma_n).mean()
+    a = atr(df, atr_n)
+    sig = pd.Series(np.nan, index=df.index)
+    sig[df.close < m - k * a] = 0.0
+    sig[df.close > m + k * a] = 1.0
+    return sig.ffill().fillna(0.0)
